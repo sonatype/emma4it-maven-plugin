@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lifecycles>
+	<lifecycle>
+		<id>emma4it</id>
+		<phases>
+			<phase>
+				<id>process-test-classes</id>
+				<executions>
+					<execution>
+						<goals>
+							<goal>instrument</goal>
+						</goals>
+					</execution>
+				</executions>
+			</phase>
+			<phase>
+				<id>test</id>
+				<configuration>
+					<testFailureIgnore>true</testFailureIgnore>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>merge</goal>
+						</goals>
+					</execution>
+				</executions>
+			</phase>
+		</phases>
+	</lifecycle>
+</lifecycles>
