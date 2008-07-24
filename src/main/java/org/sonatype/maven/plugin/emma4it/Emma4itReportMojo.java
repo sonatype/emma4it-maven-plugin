@@ -84,6 +84,11 @@ public class Emma4itReportMojo extends AbstractMavenReport {
 	 */
 	private ArtifactItem[] artifactItems;
 
+	/**
+	 * @parameter
+	 */
+	private File[] sourceFolders;
+
 	@Override
 	protected void executeReport(Locale locale) throws MavenReportException {
 		validate();
@@ -111,25 +116,36 @@ public class Emma4itReportMojo extends AbstractMavenReport {
 	}
 
 	private String[] getSourcePath() throws MavenReportException {
-		if (artifactItems == null || artifactItems.length == 0) {
-			return new String[0];
-		}
-		List<Artifact> artifacts = resolveArtifacts();
 		List<String> sources = new ArrayList<String>();
-		for (Artifact artifact : artifacts) {
-			File outputDir = new File(project.getBuild().getDirectory()
-					+ "/emma", artifact.getArtifactId());
-			ZipExtractor ze;
-			try {
-				outputDir.mkdirs();
-				ze = new ZipExtractor(artifact.getFile());
-				ze.extract(outputDir);
-			} catch (IOException e) {
-				throw new MavenReportException("Unable to extract "
-						+ artifact.toString() + " sources.", e);
+		if (artifactItems != null && artifactItems.length != 0) {
+			List<Artifact> artifacts = resolveArtifacts();
+			for (Artifact artifact : artifacts) {
+				File outputDir = new File(project.getBuild().getDirectory()
+						+ "/emma", artifact.getArtifactId());
+				ZipExtractor ze;
+				try {
+					outputDir.mkdirs();
+					ze = new ZipExtractor(artifact.getFile());
+					ze.extract(outputDir);
+				} catch (IOException e) {
+					throw new MavenReportException("Unable to extract "
+							+ artifact.toString() + " sources.", e);
+				}
+				sources.add(outputDir.getAbsolutePath());
 			}
-			sources.add(outputDir.getAbsolutePath());
 		}
+
+		if(sourceFolders != null && sourceFolders.length != 0) {
+			for (File sourceFolder : sourceFolders) {
+				String path = sourceFolder.getAbsolutePath();
+				if(sourceFolder.exists() && sourceFolder.isDirectory()) {
+					sources.add(path);
+				} else {
+					getLog().warn("Source folder " + path + " not found!");
+				}
+			}
+		}
+
 		return sources.toArray(new String[0]);
 	}
 
