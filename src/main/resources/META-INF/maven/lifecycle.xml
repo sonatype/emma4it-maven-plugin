@@ -4,7 +4,7 @@
 		<id>emma4it</id>
 		<phases>
 			<phase>
-				<id>process-test-classes</id>
+				<id>generate-resources</id>
 				<executions>
 					<execution>
 						<goals>
