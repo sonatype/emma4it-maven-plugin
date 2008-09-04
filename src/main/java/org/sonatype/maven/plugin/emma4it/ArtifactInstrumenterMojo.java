@@ -87,6 +87,7 @@ public class ArtifactInstrumenterMojo
         }
         if ( jarFiles != null && jarFiles.length != 0 )
         {
+            getLog().info( "Instrumented jars: " + Arrays.toString( jarFiles ) );
             for ( File jar : jarFiles )
             {
                 String path = jar.getAbsolutePath();
