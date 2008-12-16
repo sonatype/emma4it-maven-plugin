@@ -19,6 +19,8 @@ package org.sonatype.maven.plugin.emma4it;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
@@ -71,6 +73,20 @@ public class ArtifactInstrumenterMojo
     private File[] jarFiles;
 
     /**
+     * The include filter for the classes to instrument/measure.
+     * 
+     * @parameter
+     */
+    private String[] includes;
+
+    /**
+     * The exclude filter for the classes to not instrument/measure.
+     * 
+     * @parameter
+     */
+    private String[] excludes;
+
+    /**
      * @parameter default-value="overwrite"
      */
     private String outputMode;
@@ -87,13 +103,13 @@ public class ArtifactInstrumenterMojo
         }
         if ( jarFiles != null && jarFiles.length != 0 )
         {
-            getLog().info( "Instrumented jars: " + Arrays.toString( jarFiles ) );
             for ( File jar : jarFiles )
             {
                 String path = jar.getAbsolutePath();
                 if ( jar.exists() )
                 {
                     paths.add( path );
+                    getLog().debug( "Jar " + path + " added." );
                 }
                 else
                 {
@@ -124,7 +140,7 @@ public class ArtifactInstrumenterMojo
         processor.setAppName( IAppConstants.APP_NAME );
 
         processor.setInstrPath( paths.toArray( new String[0] ), true );
-        processor.setInclExclFilter( null );
+        processor.setInclExclFilter( getCoverageFilters() );
         processor.setOutMode( outMode );
         processor.setInstrOutDir( null );
         processor.setMetaOutFile( new File( emmaFolder, "coverage.em" ).getAbsolutePath() );
@@ -167,4 +183,22 @@ public class ArtifactInstrumenterMojo
         }
         return artifacts;
     }
+
+    private String[] getCoverageFilters()
+    {
+        Collection<String> filters = new LinkedHashSet<String>();
+        if ( includes != null )
+        {
+            filters.addAll( Arrays.asList( includes ) );
+        }
+        if ( excludes != null )
+        {
+            for ( String exclude : excludes )
+            {
+                filters.add( '-' + exclude );
+            }
+        }
+        return filters.isEmpty() ? null : filters.toArray( new String[filters.size()] );
+    }
+
 }
