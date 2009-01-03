@@ -22,55 +22,62 @@ import com.vladium.util.XProperties;
  *
  * @author marvin
  */
-public class MetadataMergeMojo extends AbstractMojo {
+public class MetadataMergeMojo
+    extends AbstractMojo
+{
 
-	/**
-	 * Location of the file.
-	 *
-	 * @parameter expression="${project}"
-	 * @required
-	 */
-	private MavenProject project;
+    /**
+     * Location of the file.
+     * 
+     * @parameter expression="${project}"
+     * @required
+     */
+    private MavenProject project;
 
-	/**
-	 * @parameter default-value="${project.build.testOutputDirectory}"
-	 */
-	private File searchPath;
+    /**
+     * @parameter default-value="${project.build.testOutputDirectory}"
+     */
+    private File searchPath;
 
-	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (!searchPath.exists() || !searchPath.isDirectory()) {
-			throw new MojoExecutionException("SearchPath " + searchPath
-					+ " not found.");
-		}
+    public void execute()
+        throws MojoExecutionException, MojoFailureException
+    {
+        if ( !searchPath.isDirectory() )
+        {
+            throw new MojoExecutionException( "SearchPath " + searchPath + " not found." );
+        }
 
-		String[] paths = getMetadataPaths();
-		if (paths.length == 0) {
-			getLog().error("coverage.ec metadata not found.");
-			return;
-		}
+        String[] paths = getMetadataPaths();
+        if ( paths.length == 0 )
+        {
+            getLog().error( "coverage.ec metadata not found." );
+            return;
+        }
 
-		String output = project.getBuild().getDirectory() + "/emma/coverage.ec";
+        String output = project.getBuild().getDirectory() + "/emma/coverage.ec";
 
-		MergeProcessor processor = MergeProcessor.create();
-		processor.setAppName(IAppConstants.APP_NAME); // for log prefixing
+        MergeProcessor processor = MergeProcessor.create();
+        processor.setAppName( IAppConstants.APP_NAME ); // for log prefixing
 
-		processor.setDataPath(paths);
-		processor.setSessionOutFile(output);
-		processor.setPropertyOverrides(new XProperties());
+        processor.setDataPath( paths );
+        processor.setSessionOutFile( output );
+        processor.setPropertyOverrides( new XProperties() );
 
-		processor.run();
-	}
+        processor.run();
+    }
 
-	@SuppressWarnings("unchecked")
-	private String[] getMetadataPaths() {
-		Collection<File> metadatas = FileUtils.listFiles(searchPath,
-				new NameFileFilter("coverage.ec"), TrueFileFilter.INSTANCE);
-		List<String> paths = new ArrayList<String>();
-		for (File file : metadatas) {
-			paths.add(file.getAbsolutePath());
-		}
+    @SuppressWarnings( "unchecked" )
+    private String[] getMetadataPaths()
+    {
+        Collection<File> metadatas =
+            FileUtils.listFiles( searchPath, new NameFileFilter( "coverage.ec" ), TrueFileFilter.INSTANCE );
+        List<String> paths = new ArrayList<String>();
+        for ( File file : metadatas )
+        {
+            paths.add( file.getAbsolutePath() );
+        }
 
-		return paths.toArray(new String[0]);
-	}
+        return paths.toArray( new String[0] );
+    }
 
 }
