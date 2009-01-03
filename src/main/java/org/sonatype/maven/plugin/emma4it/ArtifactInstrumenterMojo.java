@@ -59,8 +59,7 @@ public class ArtifactInstrumenterMojo
     private ArtifactRepository localRepository;
 
     /** @parameter expression="${project.remoteArtifactRepositories}" */
-    @SuppressWarnings( "unchecked" )
-    private List remoteRepositories;
+    private List<? extends ArtifactRepository> remoteRepositories;
 
     /**
      * @parameter
@@ -73,9 +72,18 @@ public class ArtifactInstrumenterMojo
     private File[] jarFiles;
 
     /**
+     * The collection of JAR files to instrument.
+     * 
+     * @parameter
+     * @since 1.2
+     */
+    private FileSet[] jarSets;
+
+    /**
      * The include filter for the classes to instrument/measure.
      * 
      * @parameter
+     * @since 1.2
      */
     private String[] includes;
 
@@ -83,6 +91,7 @@ public class ArtifactInstrumenterMojo
      * The exclude filter for the classes to not instrument/measure.
      * 
      * @parameter
+     * @since 1.2
      */
     private String[] excludes;
 
@@ -94,31 +103,9 @@ public class ArtifactInstrumenterMojo
     public void execute()
         throws MojoExecutionException
     {
-        List<String> paths = new ArrayList<String>();
+        String[] instrPath = collectInstrumentationPath();
 
-        if ( artifactItems != null && artifactItems.length != 0 )
-        {
-            List<Artifact> artifacts = resolveArtifacts();
-            paths.addAll( Arrays.asList( getPaths( artifacts ) ) );
-        }
-        if ( jarFiles != null && jarFiles.length != 0 )
-        {
-            for ( File jar : jarFiles )
-            {
-                String path = jar.getAbsolutePath();
-                if ( jar.exists() )
-                {
-                    paths.add( path );
-                    getLog().debug( "Jar " + path + " added." );
-                }
-                else
-                {
-                    getLog().warn( "Jar " + path + " not found!" );
-                }
-            }
-        }
-
-        if ( paths.isEmpty() )
+        if ( instrPath.length <= 0 )
         {
             getLog().error( "Nothing found to instrument!" );
             return;
@@ -139,7 +126,7 @@ public class ArtifactInstrumenterMojo
         InstrProcessor processor = InstrProcessor.create();
         processor.setAppName( IAppConstants.APP_NAME );
 
-        processor.setInstrPath( paths.toArray( new String[0] ), true );
+        processor.setInstrPath( instrPath, true );
         processor.setInclExclFilter( getCoverageFilters() );
         processor.setOutMode( outMode );
         processor.setInstrOutDir( null );
@@ -149,6 +136,65 @@ public class ArtifactInstrumenterMojo
         processor.setPropertyOverrides( properties );
 
         processor.run();
+    }
+
+    private String[] collectInstrumentationPath()
+        throws MojoExecutionException
+    {
+        getLog().debug( "Collecting JAR files" );
+
+        List<String> instrPath = new ArrayList<String>();
+
+        if ( artifactItems != null && artifactItems.length != 0 )
+        {
+            List<Artifact> artifacts = resolveArtifacts();
+            instrPath.addAll( Arrays.asList( getPaths( artifacts ) ) );
+        }
+
+        if ( jarFiles != null )
+        {
+            for ( File jar : jarFiles )
+            {
+                String path = jar.getAbsolutePath();
+                if ( jar.exists() )
+                {
+                    instrPath.add( path );
+                }
+                else
+                {
+                    getLog().warn( "JAR " + path + " not found!" );
+                }
+            }
+        }
+
+        if ( jarSets != null && jarSets.length > 0 )
+        {
+            for ( FileSet fileSet : jarSets )
+            {
+                if ( fileSet.getDirectory() == null )
+                {
+                    throw new MojoExecutionException( "Missing base directory for JAR set " + fileSet );
+                }
+                else if ( !fileSet.getDirectory().isDirectory() )
+                {
+                    getLog().warn( "Ignored non-existing JAR set directory " + fileSet.getDirectory() );
+                }
+                else
+                {
+                    instrPath.addAll( fileSet.scan( true, false ) );
+                }
+            }
+        }
+
+        if ( getLog().isDebugEnabled() )
+        {
+            for ( String path : instrPath )
+            {
+                getLog().debug( "  " + path );
+            }
+        }
+
+        return instrPath.toArray( new String[instrPath.size()] );
     }
 
     private String[] getPaths( List<Artifact> artifacts )
