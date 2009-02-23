@@ -14,7 +14,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 
 import com.vladium.emma.IAppConstants;
-import com.vladium.emma.data.MergeProcessor;
+import com.vladium.emma.merge.MergeProcessor;
 import com.vladium.util.XProperties;
 
 /**
