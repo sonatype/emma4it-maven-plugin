@@ -14,12 +14,11 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 
 import com.vladium.emma.IAppConstants;
-import com.vladium.emma.data.MergeProcessor;
+import com.vladium.emma.merge.MergeProcessor;
 import com.vladium.util.XProperties;
 
 /**
  * @goal merge
- *
  * @author marvin
  */
 public class MetadataMergeMojo
@@ -28,7 +27,7 @@ public class MetadataMergeMojo
 
     /**
      * Location of the file.
-     * 
+     *
      * @parameter expression="${project}"
      * @required
      */
@@ -47,14 +46,21 @@ public class MetadataMergeMojo
             throw new MojoExecutionException( "SearchPath " + searchPath + " not found." );
         }
 
-        String[] paths = getMetadataPaths();
+        merge( "coverage.ec" );
+        merge( "coverage.em" );
+    }
+
+    private void merge( String metadataFile )
+    {
+        getLog().info( "Merging " + metadataFile );
+        String[] paths = getMetadataPaths( metadataFile );
         if ( paths.length == 0 )
         {
             getLog().error( "coverage.ec metadata not found." );
             return;
         }
 
-        String output = project.getBuild().getDirectory() + "/emma/coverage.ec";
+        String output = project.getBuild().getDirectory() + "/emma/" + metadataFile;
 
         MergeProcessor processor = MergeProcessor.create();
         processor.setAppName( IAppConstants.APP_NAME ); // for log prefixing
@@ -67,10 +73,10 @@ public class MetadataMergeMojo
     }
 
     @SuppressWarnings( "unchecked" )
-    private String[] getMetadataPaths()
+    private String[] getMetadataPaths( String metadataFile )
     {
         Collection<File> metadatas =
-            FileUtils.listFiles( searchPath, new NameFileFilter( "coverage.ec" ), TrueFileFilter.INSTANCE );
+            FileUtils.listFiles( searchPath, new NameFileFilter( metadataFile ), TrueFileFilter.INSTANCE );
         List<String> paths = new ArrayList<String>();
         for ( File file : metadatas )
         {
