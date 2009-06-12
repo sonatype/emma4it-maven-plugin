@@ -1,11 +1,10 @@
 package org.sonatype.maven.plugin.emma4it;
 
 /*
- * PUT YOUR LICENSE HEADER HERE. 
+ * PUT YOUR LICENSE HEADER HERE.
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,18 +15,20 @@ import org.apache.maven.artifact.resolver.AbstractArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.codehaus.plexus.archiver.ArchiverException;
+import org.codehaus.plexus.archiver.UnArchiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 
 import com.vladium.emma.IAppConstants;
 import com.vladium.emma.report.ReportProcessor;
 import com.vladium.util.XProperties;
 
-import eu.cedarsoft.utils.ZipExtractor;
-
 /**
  * Generates human-readable reports from the previously collected coverage data. <strong>Note:</strong> Unlike the
  * related goal <code>emma4it</code>, this goal is not meant to participate in the site lifecycle but in the normal
  * build lifecycle after the tests have been run.
- * 
+ *
  * @goal report
  * @phase test
  * @since 1.2
@@ -62,7 +63,7 @@ public class ReportMojo
 
     /**
      * The project's base directory.
-     * 
+     *
      * @parameter default-value="${basedir}"
      * @readonly
      */
@@ -70,7 +71,7 @@ public class ReportMojo
 
     /**
      * The project's build directory.
-     * 
+     *
      * @parameter default-value="${project.build.directory}"
      * @readonly
      */
@@ -78,14 +79,14 @@ public class ReportMojo
 
     /**
      * The location of the generated report files.
-     * 
+     *
      * @parameter default-value="${project.reporting.outputDirectory}/emma"
      */
     private File reportDirectory;
 
     /**
      * The location to expand source attachments to.
-     * 
+     *
      * @parameter default-value="${project.build.directory}/emma"
      */
     private File sourcesDirectory;
@@ -93,7 +94,7 @@ public class ReportMojo
     /**
      * The (case-sensitive) names of the reports to be generated. Supported reports are <code>txt</code>,
      * <code>xml</code> and <code>html</code>. Defaults to <code>txt</code>, <code>xml</code> and <code>html</code>.
-     * 
+     *
      * @parameter
      */
     private String[] formats;
@@ -102,28 +103,33 @@ public class ReportMojo
      * The offline metadata and runtime coverage files to generate the reports from. Defaults to all <code>*.ec</code>,
      * <code>*.em</code> and <code>*.es</code> files within the project base directory and within any subdirectory of
      * the build directory.
-     * 
+     *
      * @parameter
      */
     private FileSet[] dataSets;
 
     /**
      * An optional collection of source directories to be used for the HTML report.
-     * 
+     *
      * @parameter
      */
     private FileSet[] sourceSets;
 
     /**
      * An optional collection of artifacts whose source attachments should be resolved for the HTML report.
-     * 
+     *
      * @parameter
      */
     private ArtifactItem[] artifactItems;
 
     /**
+     * @component role="org.codehaus.plexus.archiver.manager.ArchiverManager"
+     */
+    private ArchiverManager archiverManager;
+
+    /**
      * Executes this mojo.
-     * 
+     *
      * @throws MojoExecutionException If the reports could not be generated.
      */
     public void execute()
@@ -232,11 +238,18 @@ public class ReportMojo
                 try
                 {
                     outputDir.mkdirs();
-                    ZipExtractor ze = new ZipExtractor( artifact.getFile() );
-                    ze.extract( outputDir );
+
+                    UnArchiver zipUnArchiver = archiverManager.getUnArchiver( artifact.getFile() );
+                    zipUnArchiver.setSourceFile( artifact.getFile() );
+                    zipUnArchiver.setDestDirectory( outputDir );
+                    zipUnArchiver.extract();
                     sourcePath.add( outputDir.getAbsolutePath() );
                 }
-                catch ( IOException e )
+                catch ( ArchiverException e )
+                {
+                    getLog().warn( "Unable to extract " + artifact.toString() + " sources.", e );
+                }
+                catch ( NoSuchArchiverException e )
                 {
                     getLog().warn( "Unable to extract " + artifact.toString() + " sources.", e );
                 }
